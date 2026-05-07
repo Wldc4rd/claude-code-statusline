@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.9"
+# ///
 import sys
 import json
 import os
@@ -158,8 +161,9 @@ def main():
     git_branch = get_git_branch(cwd_path) if cwd_path else None
     git_display = f"({git_branch})" if git_branch else ""
 
-    # Get timestamp
-    now = datetime.now().strftime("%b %-d %H:%M:%S")
+    # Get timestamp. Build the day separately so we avoid %-d (POSIX) / %#d (Windows).
+    _now = datetime.now()
+    now = f"{_now.strftime('%b')} {_now.day} {_now.strftime('%H:%M:%S')}"
     time_display = f"\033[90m{now}\033[0m"
 
     transcript_path = input_data.get('transcript_path')

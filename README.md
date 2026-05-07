@@ -14,33 +14,68 @@ Context usage is computed from the transcript by summing `input_tokens + cache_r
 
 ## Install
 
-1. Drop `statusline.py` somewhere on your machine and make it executable:
+The script is a single file with **zero pip dependencies**. It uses [`uv`](https://docs.astral.sh/uv/) as the runner so the same source works on macOS, Linux, and Windows — and so users without a system Python can run it after a single `uv` install.
 
-   ```bash
-   git clone https://github.com/Servosity/claude-code-statusline.git
-   chmod +x claude-code-statusline/statusline.py
-   ```
+### 1. Install `uv`
 
-2. Point Claude Code at it. In `~/.claude/settings.json`:
+**macOS / Linux**
 
-   ```json
-   {
-     "statusLine": {
-       "type": "command",
-       "command": "/absolute/path/to/claude-code-statusline/statusline.py"
-     }
-   }
-   ```
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
 
-   Or symlink it into the conventional location so updates are just `git pull`:
+**Windows (PowerShell)**
 
-   ```bash
-   ln -sf "$PWD/claude-code-statusline/statusline.py" ~/.claude/statusline.py
-   ```
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
 
-   and set `"command": "~/.claude/statusline.py"`.
+Or use a package manager you already have: `brew install uv`, `winget install --id=astral-sh.uv`, `scoop install uv`, `pipx install uv`.
 
-3. Restart Claude Code (or start a new session) — the status line refreshes on every render.
+### 2. Get the script
+
+```bash
+git clone https://github.com/Servosity/claude-code-statusline.git
+```
+
+### 3. Wire it into Claude Code
+
+Edit `~/.claude/settings.json` (or `%USERPROFILE%\.claude\settings.json` on Windows) and add:
+
+**macOS / Linux** — the script's shebang (`#!/usr/bin/env -S uv run --script`) makes it directly executable, so point Claude Code straight at the file:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "/absolute/path/to/claude-code-statusline/statusline.py"
+  }
+}
+```
+
+If you'd rather keep `~/.claude/statusline.py` as the canonical path so updates are just `git pull`, symlink it:
+
+```bash
+ln -sf "$PWD/claude-code-statusline/statusline.py" ~/.claude/statusline.py
+chmod +x ~/.claude/statusline.py   # already executable in the repo, harmless to repeat
+```
+
+**Windows** — shebangs aren't executable on Windows, so invoke `uv` explicitly:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "uv run \"C:\\path\\to\\claude-code-statusline\\statusline.py\""
+  }
+}
+```
+
+(Use forward slashes or escape the backslashes — both work.)
+
+### 4. Restart Claude Code
+
+The status line refreshes on every render after that. The first run downloads a managed Python interpreter via `uv` if you don't have one — subsequent runs are instant.
 
 ## Configuration
 
@@ -52,19 +87,22 @@ Open `statusline.py` and edit the constants near the top:
 
 The model icon is selected from the model id: 🚀 Opus, 🧠 Sonnet, ⚡ Haiku, 🤖 anything else.
 
-The date format lives on one line:
+The date format is built from `datetime.now()`:
 
 ```python
-now = datetime.now().strftime("%b %-d %H:%M:%S")
+_now = datetime.now()
+now = f"{_now.strftime('%b')} {_now.day} {_now.strftime('%H:%M:%S')}"
 ```
 
-Swap `%b %-d` for `%Y-%m-%d` if you prefer ISO dates, or drop it entirely for time only.
+This avoids the `%-d` / `%#d` strftime split between POSIX and Windows. Swap it for `_now.strftime("%Y-%m-%d %H:%M:%S")` for ISO format, or drop the date entirely for time only.
 
 ## Requirements
 
-- Python 3 (uses only the standard library — no pip install needed)
-- A terminal that renders ANSI 256-color escape sequences (every modern terminal does)
-- `git` on `$PATH` if you want the branch segment
+- [`uv`](https://docs.astral.sh/uv/) — handles the Python interpreter for you
+- A terminal that renders ANSI 256-color escape sequences (every modern terminal does, including Windows Terminal)
+- `git` on `PATH` if you want the branch segment
+
+The PEP 723 inline metadata in the script (`# /// script` block) declares `requires-python = ">=3.9"`. `uv` reads this header on each run and provides a matching interpreter automatically.
 
 ## License
 
