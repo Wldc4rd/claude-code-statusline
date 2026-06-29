@@ -48,6 +48,9 @@ ACCOUNT_MAXLEN = 18               # truncate labels longer than this
 SHOW_WEEKLY = True                # rate_limits.seven_day.used_percentage -> "wk NN%"
 SHOW_FIVE_HOUR = False            # rate_limits.five_hour.used_percentage -> "5h NN%"
 RATE_ICON = "\U0001F4CA"          # 📊  (prefixes the rate cluster; set "" to drop)
+SHOW_WEEKLY_RESET = True          # append the weekly reset time -> "wk NN% ↻ Wed 7/1 2PM"
+RESET_TZ = "America/Los_Angeles"  # timezone for the reset time (server runs UTC; show local)
+RESET_FMT = "%a %-m/%-d %-I%p"    # e.g. "Wed 7/1 2PM" (GNU strftime; auto-falls back if unsupported)
 # ============================================================================
 
 RESET = "\033[0m"
@@ -237,13 +240,40 @@ def _rate_pct(input_data, window):
     except (TypeError, ValueError):
         return None
 
+def _rate_reset(input_data, window):
+    """Formatted reset time for a rate-limit window from rate_limits.<window>.resets_at
+    (Unix epoch seconds), in RESET_TZ. None if absent/unparseable."""
+    rl = input_data.get("rate_limits") or {}
+    w = rl.get(window) or {}
+    ts = w.get("resets_at")
+    if not ts:
+        return None
+    try:
+        ts = int(ts)
+    except (TypeError, ValueError):
+        return None
+    try:
+        from zoneinfo import ZoneInfo
+        dt = datetime.fromtimestamp(ts, ZoneInfo(RESET_TZ))
+    except Exception:
+        dt = datetime.fromtimestamp(ts)  # fallback: system local time
+    try:
+        return dt.strftime(RESET_FMT)
+    except ValueError:
+        return dt.strftime("%a %m/%d %I%p")  # padded fallback for non-GNU strftime
+
 def rate_segments(input_data):
     """Colored 'wk NN%' / '5h NN%' segments for whichever windows are present+enabled."""
     out = []
     if SHOW_WEEKLY:
         p = _rate_pct(input_data, "seven_day")
         if p is not None:
-            out.append(f"{color(p)}wk {round(p)}%{RESET}")
+            seg = f"{color(p)}wk {round(p)}%{RESET}"
+            if SHOW_WEEKLY_RESET:
+                r = _rate_reset(input_data, "seven_day")
+                if r:
+                    seg += f" \033[90m↻ {r}{RESET}"  # dim "↻ <reset time>"
+            out.append(seg)
     if SHOW_FIVE_HOUR:
         p = _rate_pct(input_data, "five_hour")
         if p is not None:
