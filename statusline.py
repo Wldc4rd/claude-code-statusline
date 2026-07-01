@@ -3,7 +3,7 @@
 # requires-python = ">=3.9"
 # ///
 #
-# claude-code-statusline (Coutts build)
+# claude-code-statusline (personal build)
 # Fork of github.com/Wldc4rd/claude-code-statusline (itself a fork of Servosity's).
 # Two-line status line: model / account / cwd / git / time  +  context bar / rate-limit usage.
 #
@@ -13,7 +13,7 @@
 # their data is unavailable.
 #
 #   ADD 1  Active Claude account  -> reads ~/.claude.json oauthAccount EACH render so the
-#          label updates the moment Charlie switches accounts. Prints only a short human
+#          label updates the moment you switch accounts. Prints only a short human
 #          label (never tokens/secrets/UUIDs).
 #   ADD 2  Rate-limit usage       -> reads `rate_limits` from the statusline stdin payload
 #          (Claude.ai Pro/Max only, populated after the first API response of a session)
@@ -31,12 +31,12 @@ CONTEXT_WINDOW = 200_000          # context budget for the % bar. 1_000_000 for 
 # --- ADD 1: active Claude account label -------------------------------------
 SHOW_ACCOUNT = True               # show the active-account widget on line 1
 ACCOUNT_ICON = "\U0001F464"       # 👤
-# How to label the account. NOTE: Charlie's accounts all share displayName "Charlie"
-# AND email local-part "charlie", so neither distinguishes them — the email DOMAIN does
-# (soundit / couttspnw / thriva). Hence the default below.
-#   "email_domain" -> "soundit"            (label before the first dot of the domain)  [default]
-#   "email_local"  -> "charlie"            (before the @)
-#   "email"        -> "charlie@soundit.co" (full address)
+# How to label the account. NOTE: if your accounts share a displayName AND email
+# local-part (so neither distinguishes them), the email DOMAIN usually does — hence the
+# default below. Examples use "user@example.com":
+#   "email_domain" -> "example"            (label before the first dot of the domain)  [default]
+#   "email_local"  -> "user"               (before the @)
+#   "email"        -> "user@example.com"   (full address)
 #   "display_name" -> oauthAccount.displayName
 #   "org"          -> oauthAccount.organizationName
 #   "smart"        -> org (if not auto-generated) else email_domain else email_local else display
